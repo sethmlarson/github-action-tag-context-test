@@ -14,10 +14,7 @@ jobs:
         run: |
           echo "$GITHUB_CONTEXT"
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0 # Doesn't help
       - name: "Fetch tag info"
         run: |
           git fetch --tags --force # Retrieve annotated tags.
-          echo $(git for-each-ref $GITHUB_REF --format='%(contents:subject)')
-          git branch --contains tags/$GITHUB_REF
+          git branch --contains tags/$GITHUB_REF_NAME

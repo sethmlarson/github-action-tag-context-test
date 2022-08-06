@@ -1,20 +1,36 @@
+name: "Release"
+
 on:
   push:
     tags:
       - "*"
 
 jobs:
-  print:    
-    name: Print event
-    runs-on: ubuntu-latest
+  build:
+    name: "Build"
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+    runs-on: "ubuntu-latest"
+
     steps:
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: |
-          echo "$GITHUB_CONTEXT"
-      - uses: actions/checkout@v2
-      - name: "Fetch tag info"
-        run: |
-          git fetch --tags --force # Retrieve annotated tags.
-          git branch --contains tags/$GITHUB_REF_NAME
+    - name: "Checkout repository"
+      uses: "actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846"
+
+    - name: "Generate hashes"
+      id: hash
+      run: |
+        echo "::set-output name=hashes::$(sha256sum blob.txt | base64 -w0)"
+
+  provenance:
+    needs: [build]
+    permissions:
+      actions: read
+      contents: write
+      id-token: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.2.0
+    with:
+      base64-subjects: "${{ needs.build.outputs.hashes }}"
+      # Set a custom name for the provenance attestation.
+      attestation-name: "artifacts.intoto.jsonl"
+      # Upload provenance to a new release
+      upload-assets: true
